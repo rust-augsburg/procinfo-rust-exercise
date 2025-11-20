@@ -19,33 +19,57 @@
 //! This file contains only TODO markers that correspond to the teaching
 //! worksheet Parts 1–8 (e.g., TODO-Part3).
 
-use std::{fs, io, thread, time::Duration};
+use std::{fmt::Display, fs, io, thread, time::Duration};
 
 // ============================================================================
 // Part 2 – Memory parsing
 // ============================================================================
 
-/// Parses the content of `/proc/meminfo`.
-///
-/// Expected output: `(total_kb, available_kb)`.
-///
-/// TODO-Part2:
-/// - Parse the MemTotal line
-/// - Parse the MemAvailable line
-/// - Use iterators and split_whitespace
-pub fn parse_meminfo(_content: &str) -> io::Result<(u64, u64)> {
-    // TODO-Part2
-    unimplemented!()
+/// Struct to store information from `/proc/meminfo`.
+struct MemInfo {
+    total: u64,
+    available: u64,
 }
 
-/// Reads `/proc/meminfo` from a path and delegates to parse_meminfo.
-///
-/// TODO-Part2:
-/// - Read file with fs::read_to_string
-/// - Call parse_meminfo
-pub fn read_meminfo_from(_path: &str) -> io::Result<(u64, u64)> {
-    // TODO-Part2
-    unimplemented!()
+impl MemInfo {
+    /// Reads `/proc/meminfo` from a path and delegates to parse_meminfo.
+    ///
+    /// TODO-Part2:
+    /// - Read file with fs::read_to_string
+    /// - Call parse_meminfo
+    fn from_file(_path: &str) -> io::Result<Self> {
+        // TODO-Part2
+        unimplemented!()
+    }
+
+    /// Parses the content of `/proc/meminfo`.
+    ///
+    /// TODO-Part2:
+    /// - Parse the MemTotal line
+    /// - Parse the MemAvailable line
+    /// - Use iterators and split_whitespace
+    fn parse_from_str(_content: &str) -> io::Result<Self> {
+        // TODO-Part2
+        unimplemented!()
+    }
+
+    /// Calculate the amount of used memory.
+    ///
+    /// TODO-Part2:
+    /// - Implement calculation of used memory.
+    fn used(&self) -> u64 {
+        // TODO-Part2
+        unimplemented!()
+    }
+}
+
+// Make `MemInfo` printable
+impl Display for MemInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // TODO-Part2:
+        // - Implement fmt to return 'Memory: total=123kB free=456kB used=789kB'
+        write!(f, "",)
+    }
 }
 
 // ============================================================================
@@ -133,7 +157,7 @@ pub fn print_top_processes(_procs: &[(String, String, u64)], _n: usize) {
 fn main() -> io::Result<()> {
     loop {
         // TODO-Part8: Call read_meminfo_from("/proc/meminfo")
-        // let (total, available) = read_meminfo_from("/proc/meminfo")?;
+        // let meminfo = read_meminfo_from("/proc/meminfo")?;
 
         // TODO-Part8: Print memory summary
 
@@ -163,9 +187,9 @@ MemTotal:       16384256 kB
 SomeOtherValue:  123567 kB
 MemAvailable:    2345678 kB";
 
-        let (total, free) = parse_meminfo(input).unwrap();
-        assert_eq!(total, 16384256);
-        assert_eq!(free, 2345678);
+        let meminfo = MemInfo::parse_from_str(input).unwrap();
+        assert_eq!(meminfo.total, 16384256);
+        assert_eq!(meminfo.available, 2345678);
     }
 
     #[test]
