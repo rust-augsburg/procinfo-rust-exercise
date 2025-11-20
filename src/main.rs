@@ -160,6 +160,7 @@ mod tests {
     fn test_parse_meminfo() {
         let input = "\
 MemTotal:       16384256 kB
+SomeOtherValue:  123567 kB
 MemAvailable:    2345678 kB";
 
         let (total, free) = parse_meminfo(input).unwrap();
