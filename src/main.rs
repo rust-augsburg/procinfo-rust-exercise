@@ -4,17 +4,17 @@
 //!
 //! This program demonstrates how to read basic system information from the
 //! Linux `/proc` filesystem and present it in a simple, continuously updating
-//! terminal view.  
+//! terminal view.
 //!
 //! It performs three main tasks:
 //!
-//! 1. **Reads system memory usage** from `/proc/meminfo`  
+//! 1. **Reads system memory usage** from `/proc/meminfo`
 //!    (`MemTotal` and `MemAvailable` fields).
 //! 2. **Reads running processes** by scanning the numeric directories inside
 //!    `/proc/<pid>/`.
 //! 3. **Extracts process name and resident memory size (RSS)** from:
-//!    - `/proc/<pid>/comm` — process name  
-//!    - `/proc/<pid>/status` — `VmRSS` in kB  
+//!    - `/proc/<pid>/comm` — process name
+//!    - `/proc/<pid>/status` — `VmRSS` in kB
 //!
 //! The program then prints the **top N processes by memory usage** to the
 //! terminal every second.
@@ -23,22 +23,22 @@
 //!
 //! The code is split into small, test-friendly units:
 //!
-//! - `parse_meminfo` – pure function for parsing `/proc/meminfo` content  
-//! - `parse_process_status` – pure parser for `VmRSS` extraction  
-//! - `read_process_status` – loads and parses `/proc/<pid>/status`  
-//! - `read_process_comm` – loads `/proc/<pid>/comm`  
-//! - `read_process` – combines name + memory  
-//! - `list_processes_from` – scans `/proc` and collects `(pid, name, rss_kb)`  
+//! - `parse_meminfo` – pure function for parsing `/proc/meminfo` content
+//! - `parse_process_status` – pure parser for `VmRSS` extraction
+//! - `read_process_status` – loads and parses `/proc/<pid>/status`
+//! - `read_process_comm` – loads `/proc/<pid>/comm`
+//! - `read_process` – combines name + memory
+//! - `list_processes_from` – scans `/proc` and collects `(pid, name, rss_kb)`
 //! - `print_top_processes` – prints process information using
-//!   `procs.iter().take(N)`  
+//!   `procs.iter().take(N)`
 //!
-//! Pure parsing code is fully covered by unit tests.  
+//! Pure parsing code is fully covered by unit tests.
 //! The `/proc`-dependent parts are small and well-isolated.
 //!
 //! # Platform Requirements
 //!
 //! This program requires a **Linux system** with a **procfs** mounted at
-//! `/proc`.  
+//! `/proc`.
 //! It will not run on:
 //!
 //! - macOS
@@ -48,7 +48,7 @@
 //!
 //! # Permissions
 //!
-//! The program does **not** require root privileges.  
+//! The program does **not** require root privileges.
 //! All accessed files are normally world-readable, including for processes
 //! owned by `root`:
 //!
@@ -66,16 +66,16 @@
 //! cargo run
 //! ```
 //!
-//! The screen updates once per second.  
+//! The screen updates once per second.
 //! Press `Ctrl+C` to exit.
 //!
 //! # Educational Purpose
 //!
 //! This program is intentionally kept small and readable to serve as:
 //!
-//! - a training exercise for Rust beginners  
-//! - an introduction to systems-level programming in Rust  
-//! - an example for structured parsing and `/proc` exploration  
+//! - a training exercise for Rust beginners
+//! - an introduction to systems-level programming in Rust
+//! - an example for structured parsing and `/proc` exploration
 //!
 //! It can be easily extended with:
 //!
@@ -100,11 +100,22 @@ pub fn parse_meminfo(content: &str) -> io::Result<(u64, u64)> {
     let mut total = 0;
     let mut available = 0;
 
+    fn parse_value(line: &str) -> io::Result<u64> {
+        line.trim()
+            .split_once(' ')
+            .ok_or_else(|| {
+                io::Error::new(io::ErrorKind::InvalidData, "No whitespace found".to_owned())
+            })?
+            .0
+            .parse::<u64>()
+            .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err.to_string()))
+    }
+
     for line in content.lines() {
         if let Some(value) = line.strip_prefix("MemTotal:") {
-            total = value.split_whitespace().next().unwrap().parse().unwrap();
+            total = parse_value(value)?;
         } else if let Some(value) = line.strip_prefix("MemAvailable:") {
-            available = value.split_whitespace().next().unwrap().parse().unwrap();
+            available = parse_value(value)?;
         }
     }
 
@@ -141,7 +152,10 @@ pub fn read_process_status(base: &str, pid: &str) -> Option<u64> {
 /// Reads only the `/proc/<pid>/comm` file.
 pub fn read_process_comm(base: &str, pid: &str) -> String {
     let path = format!("{}/{}/comm", base, pid);
-    fs::read_to_string(path).unwrap_or_default().trim().to_string()
+    fs::read_to_string(path)
+        .unwrap_or_default()
+        .trim()
+        .to_string()
 }
 
 /// Combines status + comm info.
@@ -165,10 +179,10 @@ pub fn list_processes_from(base: &str) -> io::Result<Vec<(String, String, u64)>>
         let entry = entry?;
         let pid = entry.file_name().to_string_lossy().to_string();
 
-        if pid.chars().all(|c| c.is_ascii_digit()) {
-            if let Some((name, mem)) = read_process(base, &pid) {
-                out.push((pid, name, mem));
-            }
+        if pid.chars().all(|c| c.is_ascii_digit())
+            && let Some((name, mem)) = read_process(base, &pid)
+        {
+            out.push((pid, name, mem));
         }
     }
 
@@ -185,7 +199,7 @@ pub fn list_processes_from(base: &str) -> io::Result<Vec<(String, String, u64)>>
 ///
 /// Uses: `procs.iter().take(5)`
 pub fn print_top_processes(procs: &[(String, String, u64)], n: usize) {
-    println!("\nTop {} processes by memory:", n);
+    println!("Top {} processes by memory:", n);
 
     for (pid, name, mem) in procs.iter().take(n) {
         println!("{:<6} {:<20} {} kB", pid, name, mem);
@@ -198,6 +212,8 @@ pub fn print_top_processes(procs: &[(String, String, u64)], n: usize) {
 
 fn main() -> io::Result<()> {
     loop {
+        print!("\u{001b}c"); // Clear screen
+
         let (total, free) = read_meminfo_from("/proc/meminfo")?;
         println!(
             "Memory: total={}kB free={}kB used={}kB",
@@ -227,6 +243,7 @@ mod tests {
     fn test_parse_meminfo() {
         let input = "\
 MemTotal:       16384256 kB
+SomeOtherValue:  123567 kB
 MemAvailable:    2345678 kB";
 
         let (total, free) = parse_meminfo(input).unwrap();
